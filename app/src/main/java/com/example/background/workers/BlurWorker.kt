@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.text.TextUtils
 import android.util.Log
+import androidx.work.Data
 import androidx.work.Worker
 import com.example.background.Constants
 
@@ -29,6 +30,9 @@ class BlurWorker : Worker() {
             val blurredBitmap = WorkerUtils.blurBitmap(picture, context)
             val writeBitmapToFileResult = WorkerUtils.writeBitmapToFile(context, blurredBitmap)
             WorkerUtils.makeStatusNotification("Output is " + writeBitmapToFileResult.toString(), context)
+
+            outputData = Data.Builder().putString(Constants.KEY_IMAGE_URI, writeBitmapToFileResult.toString())
+                    .build()
 
             Worker.Result.SUCCESS
         } catch (th: Throwable) {
