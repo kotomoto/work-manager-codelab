@@ -23,8 +23,11 @@ import android.text.TextUtils;
 import androidx.work.Data;
 import androidx.work.Data.Builder;
 import com.example.background.workers.BlurWorker;
+import com.example.background.workers.CleanupWorker;
+import com.example.background.workers.SaveImageToFileWorker;
 
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkContinuation;
 import androidx.work.WorkManager;
 
 public class BlurViewModel extends ViewModel {
@@ -41,11 +44,23 @@ public class BlurViewModel extends ViewModel {
      * @param blurLevel The amount to blur the image
      */
     void applyBlur(int blurLevel) {
-        OneTimeWorkRequest blurRequest = new OneTimeWorkRequest.Builder(BlurWorker.class)
-                .setInputData(createInputDataForUri())
-                .build();
+        WorkContinuation continuation = workManager.beginWith(OneTimeWorkRequest.from(CleanupWorker.class));
 
-        workManager.enqueue(blurRequest);
+        for (int i = 0; i < blurLevel; i++) {
+            OneTimeWorkRequest.Builder blurBuilder = new OneTimeWorkRequest.Builder(BlurWorker.class);
+
+            if (i == 0) {
+                blurBuilder.setInputData(createInputDataForUri());
+            }
+
+            continuation = continuation.then(blurBuilder.build());
+        }
+
+        OneTimeWorkRequest saveRequest = new OneTimeWorkRequest.Builder(SaveImageToFileWorker.class)
+                .build();
+        continuation = continuation.then(saveRequest);
+
+        continuation.enqueue();
     }
 
     private Data createInputDataForUri() {
